@@ -4,7 +4,7 @@ import socket
 # 创建socket对象
 s = socket.socket()
 # 将socket绑定到本机IP和端口
-s.bind(('192.168.200.116', 2048))
+s.bind(('192.168.56.1', 2048))
 # 服务端开始监听来自客户端的连接
 s.listen()
 while True:
