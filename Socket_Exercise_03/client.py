@@ -1,8 +1,8 @@
 # Import the socket package
 import socket
-from datetime import time
 
 # create a socket
+import time
 
 s = socket.socket()
 # connect the server
@@ -14,6 +14,8 @@ command_list = ["Tianshi Feng","look","look chest","look mirror","get hairpin",
 for i in command_list:
     res = s.recv(1024)
     print(res.decode('utf-8'))
-    s.send(command_list[i].encode('utf-8'))
+    s.send(i.encode('utf-8'))
     time.sleep(0.25)
+res_suc = s.recv(1024)
+print(res_suc.decode('utf-8'))
 s.close()
