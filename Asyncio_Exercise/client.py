@@ -20,8 +20,9 @@ class EchoClientProtocol(asyncio.Protocol):
 
 
 loop = asyncio.get_event_loop()
-message = 'Hello World!'
-coro = loop.create_connection(lambda: EchoClientProtocol(message, loop), '192.168.56.1', 2048)
+# message = 'Hello World!'
+message = ["Hello World1", "Hello world2"]
+coro = loop.create_connection(lambda: EchoClientProtocol(message, loop), '127.0.0.1', 2048)
 loop.run_until_complete(coro)
 loop.run_forever()
 loop.close()
