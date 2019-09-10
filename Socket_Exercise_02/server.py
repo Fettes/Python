@@ -4,7 +4,7 @@ import socket
 # create a socket
 s = socket.socket()
 # bind IP and the Port
-s.bind(('192.168.200.52', 19002))
+s.bind(('192.168.56.1', 2048))
 # Listen to the connection
 s.listen()
 while True:

@@ -4,7 +4,7 @@ import socket
 # create a socket
 s = socket.socket()
 # connect the server
-s.connect(('192.168.200.52', 19002))  # ①
+s.connect(('192.168.56.1', 2048))  # ①
 while True:
     str1 = input('>>').strip()
     if not str1:
