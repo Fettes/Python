@@ -1,7 +1,10 @@
 """
 Escape Room Core
 """
-import random, sys, asyncio
+import random, sys
+import socket
+import time
+import asyncio
 
 
 def create_container_contents(*escape_room_objects):
@@ -361,9 +364,9 @@ class EscapeRoomGame:
         #  - self.status, you'll need to stop when no longer playing
         #  - check if the flyingkey is still flying
         #  - of course, "move_flyingkey"
-        while True:
+        while self.status == "playing" and flyingkey["flying"] == True:
             self.move_flyingkey(flyingkey)
-            await asyncio.sleep(3)
+            await asyncio.sleep(5)
         pass
 
     def start(self):
@@ -390,16 +393,16 @@ class EscapeRoomGame:
                 self.status = "escaped"
 
 
-class ServerProtocol(asyncio.Protocol):
-    def __init__(self, game):
-        print("xxx")
-        self.game = game
+class EchoServerClientProtocol(asyncio.Protocol):
 
     def connection_made(self, transport):
         self.transport = transport
-        print("1111")
+        self.game = EscapeRoomGame()
         self.game.output = self.send_message
+        self.game.create_game()
         self.game.start()
+        self.loop = asyncio.get_event_loop()
+        self.loop.create_task(self.agent())
 
     def data_received(self, data):
         message = data.decode()
@@ -409,10 +412,12 @@ class ServerProtocol(asyncio.Protocol):
                 print(i)
                 output = self.game.command(i)
 
-
         if self.game.status == "escaped":
             print("Success")
             self.transport.close()
+
+    async def agent(self):
+        await asyncio.wait([asyncio.ensure_future(a) for a in self.game.agents])
 
     def send_message(self, result):
         result = result + "<EOL>\n"
@@ -434,49 +439,20 @@ def flush_output(*args, **kargs):
     sys.stdout.flush()
 
 
-async def mygen(alist):
-    while len(alist) > 0:
-        c = random.randint(0, len(alist) - 1)
-        print(alist.pop(c))
-        await asyncio.sleep(3)
-
-async def main(args):
-    # Each client connection will create a new protocol instance
-    loop = asyncio.get_running_loop()
-    game = EscapeRoomGame()
-    game.create_game(cheat=("--cheat" in args))
-    server = loop.create_server(ServerProtocol(game), 'localhost', 1024)
-    task_list = [asyncio.ensure_future(a) for a in game.agents]
-    task_list.append(server)
-
-    strlist = ["ss", "dd", "gg"]
-    intlist = [1, 2, 5, 6]
-    c1 = mygen(strlist)
-    c2 = mygen(intlist)
-    task_list.append(asyncio.ensure_future(c1))
-    task_list.append(asyncio.ensure_future(c2))
-
-    await asyncio.wait(task_list)
-    # # run the all the tasks
-    print("xxx1")
-    # result = await coro
-    # Serve requests until Ctrl+C is pressed
-    # print('Serving on {}'.format(server.sockets[0].getsockname()))
-
-    # loop = asyncio.get_event_loop()
-    # game = EscapeRoomGame(output=flush_output)
-    # game.create_game(cheat=("--cheat" in args))
-    # game.start()
-    # flush_output(">> ", end='')
-    # loop.add_reader(sys.stdin, game_next_input, game)
-    # await asyncio.wait([asyncio.ensure_future(a) for a in game.agents])
-
-
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()
-    asyncio.ensure_future(main(sys.argv[1:]))
-    loop.run_forever()
-    # Close the server
-    # server.close()
-    # loop.run_until_complete(server.wait_closed())
+    # Each client connection will create a new protocol instance
+    coro = loop.create_server(EchoServerClientProtocol, 'localhost', 1024)
+    server = loop.run_until_complete(coro)
 
+    # Serve requests until Ctrl+C is pressed
+    print('Serving on {}'.format(server.sockets[0].getsockname()))
+    try:
+        loop.run_forever()
+    except KeyboardInterrupt:
+        pass
+
+    # Close the server
+    server.close()
+    loop.run_until_complete(server.wait_closed())
+    loop.close()
